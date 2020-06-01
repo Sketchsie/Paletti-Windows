@@ -1,2 +1,2 @@
-rootProject.name = "Paletti"
+rootProject.name = "PalettiFX"
 

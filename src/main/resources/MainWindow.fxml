@@ -1,19 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?scenebuilder-stylesheet main.css?>
-
+<?import components.HeaderBar?>
+<?import components.InitialFragment?>
+<?import components.Notification?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.Tooltip?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.Scene?>
-<?import javafx.scene.web.WebView?>
 <?import javafx.stage.Stage?>
-<Stage height="310.0" minHeight="310.0" minWidth="350.0" resizable="false" title="Paletti" width="350.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="MainController">
-   <scene>
-      <Scene>
-         <AnchorPane>
-            <children>
-                     <WebView fx:id="webView" layoutX="16.0" layoutY="16.0" onDragDropped="#onDragDropped" onDragOver="#onDragOver" prefHeight="310.0" prefWidth="350.0" style="-fx-background-color: #000000;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" />
-                  </children>
-         </AnchorPane>
-      </Scene>
-   </scene>
+<Stage fx:id="stage" minHeight="450.0" minWidth="500.0" title="Paletti" xmlns="http://javafx.com/javafx/10.0.2-internal"
+		 xmlns:fx="http://javafx.com/fxml/1" fx:controller="MainController">
+	<scene>
+		<Scene fx:id="scene" fill="#00000000" onDragDropped="#onDragDropped" onDragOver="#onDragOver"
+				 onKeyPressed="#onKeyPressed" onScroll="#onScroll" stylesheets="@style.css">
+			<VBox styleClass="stage-shadow">
+				<HBox alignment="CENTER" onMouseDragged="#onHeaderBarDragged" onMousePressed="#onHeaderBarPressed"
+						VBox.vgrow="NEVER">
+					<Slider fx:id="slider" blockIncrement="1.0" max="32.0" min="3.0" value="6.0">
+						<HBox.margin>
+							<Insets left="8.0" right="8.0" top="2.0"/>
+						</HBox.margin>
+						<tooltip>
+							<Tooltip text="Adjust size of color palette"/>
+						</tooltip>
+					</Slider>
+					<CheckBox fx:id="monoSwitch" mnemonicParsing="false" text="Black/White">
+						<HBox.margin>
+							<Insets top="4.0"/>
+						</HBox.margin>
+					</CheckBox>
+					<Pane HBox.hgrow="ALWAYS"/>
+					<HeaderBar fx:id="headerBar">
+						<stage>
+							<fx:reference source="controller"/>
+						</stage>
+					</HeaderBar>
+				</HBox>
+				<StackPane fx:id="fragmentContainer" minHeight="300.0" minWidth="450.0" onMouseClicked="#onDropareaClick"
+							  prefHeight="300.0" prefWidth="450.0" style="-fx-cursor: hand;" VBox.vgrow="ALWAYS">
+					<InitialFragment fx:id="fragment">
+						<navigation>
+							<fx:reference source="controller"/>
+						</navigation>
+					</InitialFragment>
+					<Notification fx:id="notification" StackPane.alignment="BOTTOM_CENTER"/>
+				</StackPane>
+				<StackPane>
+					<HBox fx:id="colorPalette" spacing="4.0"
+							style="-fx-background-color: #fafafa; -fx-border-color: #e9e7e6; -fx-border-width: 1px 0 0 0; -fx-background-radius: 0 0 2px 2px;"
+							VBox.vgrow="NEVER">
+						<padding>
+							<Insets bottom="8.0" left="8.0" right="8.0" top="8.0"/>
+						</padding>
+					</HBox>
+					<Pane maxWidth="16.0" maxHeight="16.0" translateX="8.0" translateY="8.0"
+							StackPane.alignment="BOTTOM_RIGHT"
+							style="-fx-background-color: transparent; -fx-cursor: se_resize;" onMousePressed="#onResizeBegin"
+							onMouseDragged="#onResize"/>
+				</StackPane>
+			</VBox>
+		</Scene>
+	</scene>
 </Stage>

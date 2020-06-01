@@ -1,28 +1,46 @@
 = Paletti
 
-**Note:** This is the old JavaFX/Kotlin version of Paletti. A newer version (from 2.0) is written in Vala for GTK, and doesn't use a WebView/color-thief.js/JavaScript anymore.
-
-'''
-
-I basically took https://alembicforsketch.com/[Alembic] and put it into a JavaFX WebView.
-Alembic was originally developed by https://www.awkward.co/[Awkward] and licensed under the MIT license.
-
-I added a small feature so that you can scroll up and down to increase/decrease the size of the color palette (between 6 and 12).
-
-'''
-
 image::Paletti.gif[]
 
-Paletti creates a color palette of an image that you drop into it. Click on a tile to put that color into your clipboard.
+Paletti creates a color palette of an image.
+It _quantizes_ the image using http://leptonica.org[Leptonica], and then creates a color palette out of the remaining colors.
+Click on a color to copy its hex value into the clipboard.
+You can also save or export the image separately.
+
+This is a JavaFX version of https://github.com/Eroica/Paletti[Paletti (Vala)] written for Windows.
+It is styled to look like a native (UWP) Windows app.
+
+== Shortcuts
+
+.Shortcuts
+|===
+|Combination |Action
+
+|Ctrl+O
+|Open an image
+
+|Ctrl+S
+|Export current image
+
+|Ctrl+C
+|Copy current image into clipboard
+
+|Ctrl+E
+|Export current color palette
+
+|Mouse wheel up/down
+|Increase/decrease color palette size
+
+|x
+|Toggle between black/white and colored segmentation
+|===
 
 == Installation
 
 A Windows executable is available under Releases.
-I used `jpackage` to build it which bundles the necessary JRE, so nothing else is required to run Paletti.
+It is created using `jpackage` which bundles the necessary JRE, so nothing else is required to run Paletti.
 
-For other systems or compiling from source, see <<Building>>.
-
-== Building
-
-Paletti is built with Gradle and packaged with `jpackage` into an executable.
-You should be at least using JDK 14.
+Since this version of Paletti is written in JavaFX, it should theoretically run on GNU/Linux and macOS as well.
+However, I didn't intend to support macOS with this program.
+It is written for Windows.
+For GNU/Linux, please use the feature-identical version written in Vala and GTK https://github.com/Eroica/Paletti[here].
