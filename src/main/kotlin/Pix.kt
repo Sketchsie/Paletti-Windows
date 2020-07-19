@@ -24,7 +24,9 @@ interface IPix {
 
 class PosterizedPix(src: Pix, colorsCount: Int) : IPix {
     override val src: Pix = pixMedianCutQuantGeneral(
-        src, 0, 8, colorsCount, 0, 0, 0
+        if (src.colormap != null) { pixConvertTo32(src) } else src, 0,
+        8, colorsCount,
+        0, 0, 0
     ) ?: throw LeptonicaError
 }
 
