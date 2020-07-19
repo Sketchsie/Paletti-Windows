@@ -1,8 +1,12 @@
-import components.*
-import javafx.beans.property.SimpleIntegerProperty
-import javafx.beans.value.ChangeListener
+package components
+
+import IViewModel
+import PalettiError
+import Uninitialized
+import javafx.beans.InvalidationListener
 import javafx.embed.swing.SwingFXUtils
 import javafx.fxml.FXML
+import javafx.fxml.FXMLLoader
 import javafx.geometry.Rectangle2D
 import javafx.scene.SnapshotParameters
 import javafx.scene.control.CheckBox
@@ -11,9 +15,9 @@ import javafx.scene.image.Image
 import javafx.scene.input.*
 import javafx.scene.layout.HBox
 import javafx.scene.layout.StackPane
-import javafx.scene.paint.Color
 import javafx.stage.FileChooser
 import javafx.stage.Stage
+import javafx.stage.StageStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.javafx.JavaFx
@@ -23,10 +27,6 @@ import net.sourceforge.lept4j.util.LeptUtils
 import java.io.IOException
 import java.nio.file.Paths
 import javax.imageio.ImageIO
-
-interface IStage {
-    val stage: Stage
-}
 
 interface INavigation {
     suspend fun next(path: String)
@@ -45,10 +45,7 @@ val COMBINATION_EXPORT_PALETTE = KeyCodeCombination(KeyCode.E, KeyCodeCombinatio
 val COMBINATION_COPY_TO_CLIPBOARD = KeyCodeCombination(KeyCode.C, KeyCodeCombination.SHORTCUT_DOWN)
 val COMBINATION_PASTE_FROM_CLIPBOARD = KeyCodeCombination(KeyCode.V, KeyCodeCombination.SHORTCUT_DOWN)
 
-class MainController : IStage, INavigation, ISaveDialog, CoroutineScope {
-    @FXML
-    override lateinit var stage: Stage
-
+class PalettiWindow(private val viewModel: IViewModel) : Stage(), INavigation, ISaveDialog, CoroutineScope {
     @FXML
     private lateinit var headerBar: HeaderBar
 
@@ -75,44 +72,38 @@ class MainController : IStage, INavigation, ISaveDialog, CoroutineScope {
     private var offsetY = 0.0
     private var left = 0.0
     private var top = 0.0
-    private val sliderCountListener: ChangeListener<Number> by lazy {
-        ChangeListener<Number> { _, _, count ->
-            val currentCount = colorPalette.children.size
-            val newCount = count.toInt()
-            if (currentCount > newCount) {
-                colorPalette.children.remove(newCount, currentCount)
-            } else {
-                while (colorPalette.children.size < newCount) {
-                    colorPalette.children.add(ColorTile())
-                }
-            }
-        }
-    }
 
-    fun initialize() {
-        while (colorPalette.children.size < slider.value.toInt()) {
-            colorPalette.children.add(ColorTile())
+    init {
+        FXMLLoader(javaClass.getResource("PalettiWindow.fxml")).apply {
+            setRoot(this@PalettiWindow)
+            setController(this@PalettiWindow)
+            load()
         }
-        slider.valueProperty().addListener(sliderCountListener)
-        headerBar.isMaximized.addListener { _, _, isMaximized ->
-            if (isMaximized) {
-                stage.scene.root.styleClass.remove("stage-shadow")
-            } else {
-                stage.scene.root.styleClass.add("stage-shadow")
+        initStyle(StageStyle.TRANSPARENT)
+        slider.valueProperty().bindBidirectional(viewModel.colorsCount)
+        monoSwitch.selectedProperty().bindBidirectional(viewModel.isBlackWhite)
+        viewModel.colorsCount.addListener { _, _, count -> setColorPalette(count.toInt()) }
+        viewModel.colors.addListener(InvalidationListener {
+            setColorPalette(viewModel.colors.value.size)
+            viewModel.colors.value.forEachIndexed { index, color ->
+                (colorPalette.children[index] as ColorTile).setColor(color)
             }
+        })
+        while (colorPalette.children.size < viewModel.colorsCount.value) {
+            colorPalette.children.add(ColorTile())
         }
     }
 
     fun onHeaderBarPressed(event: MouseEvent) {
-        offsetX = stage.x - event.screenX
-        offsetY = stage.y - event.screenY
+        offsetX = x - event.screenX
+        offsetY = y - event.screenY
         event.consume()
     }
 
     fun onHeaderBarDragged(event: MouseEvent) {
         if (!headerBar.isMaximized.value) {
-            stage.x = event.screenX + offsetX
-            stage.y = event.screenY + offsetY
+            x = event.screenX + offsetX
+            y = event.screenY + offsetY
         }
         event.consume()
     }
@@ -125,14 +116,14 @@ class MainController : IStage, INavigation, ISaveDialog, CoroutineScope {
 
     fun onResize(event: MouseEvent) {
         if (!headerBar.isMaximized.value) {
-            if (stage.width + event.screenX - left >= stage.minWidth) {
-                stage.width = stage.width + event.screenX - left
+            if (width + event.screenX - left >= minWidth) {
+                width = width + event.screenX - left
             } else {
                 event.consume()
                 return
             }
-            if (stage.height + event.screenY - top >= stage.minHeight) {
-                stage.height = stage.height + event.screenY - top
+            if (height + event.screenY - top >= minHeight) {
+                height = height + event.screenY - top
             } else {
                 event.consume()
                 return
@@ -180,45 +171,41 @@ class MainController : IStage, INavigation, ISaveDialog, CoroutineScope {
             when {
                 event.code == KeyCode.X -> monoSwitch.isSelected = !monoSwitch.isSelected
                 COMBINATION_OPEN.match(event) -> openFileDialog()
-                COMBINATION_CLOSE.match(event) -> stage.close()
+                COMBINATION_CLOSE.match(event) -> close()
                 COMBINATION_PASTE_FROM_CLIPBOARD.match(event) -> {
-                    if (Clipboard.getSystemClipboard().hasImage()) {
-                        val image = Clipboard.getSystemClipboard().image
-                        launch { fragment.onLoad(image) }
+                    val clipboard = Clipboard.getSystemClipboard()
+                    if (clipboard.hasImage()) {
+                        launch { fragment.onLoad(clipboard.image) }
+                    } else if (clipboard.hasFiles()) {
+                        launch { fragment.onLoad(clipboard.files.first().absolutePath) }
                     }
                 }
                 else -> {
                     fragment.onShortcut(event)
-                    return
                 }
             }
             event.consume()
         } catch (e: Uninitialized) {
             notification.show(e)
+            event.consume()
         }
     }
 
     override suspend fun next(path: String) {
-        val sliderValueProperty = SimpleIntegerProperty(slider.value.toInt())
-        slider.valueProperty().bindBidirectional(sliderValueProperty)
-        val fragment = ImageFragment(sliderValueProperty, monoSwitch.selectedProperty(), this)
+        val fragment = ImageFragment(this, viewModel)
         try {
             fragment.onLoad(path)
             setup(fragment)
-            setColorPalette(fragment.colors.value)
         } catch (e: PalettiError) {
             notification.show(e)
         }
     }
 
     override suspend fun next(image: Image) {
-        val sliderValueProperty = SimpleIntegerProperty(slider.value.toInt())
-        slider.valueProperty().bindBidirectional(sliderValueProperty)
-        val fragment = ImageFragment(sliderValueProperty, monoSwitch.selectedProperty(), this)
+        val fragment = ImageFragment(this, viewModel)
         try {
             fragment.onLoad(image)
             setup(fragment)
-            setColorPalette(fragment.colors.value)
         } catch (e: PalettiError) {
             notification.show(e)
         }
@@ -227,7 +214,7 @@ class MainController : IStage, INavigation, ISaveDialog, CoroutineScope {
     override fun saveImage(pix: Pix) {
         val fileChooser = FileChooser()
         fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("PNG Image", "*.png"))
-        fileChooser.showSaveDialog(stage)?.let {
+        fileChooser.showSaveDialog(this)?.let {
             try {
                 ImageIO.write(LeptUtils.convertPixToImage(pix), "png", it)
                 notification.show("Saved image to ${Paths.get(it.toURI())}")
@@ -240,7 +227,7 @@ class MainController : IStage, INavigation, ISaveDialog, CoroutineScope {
     override fun savePalette() {
         val fileChooser = FileChooser()
         fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("PNG Image", "*.png"))
-        fileChooser.showSaveDialog(stage)?.let {
+        fileChooser.showSaveDialog(this)?.let {
             try {
                 val viewport = Rectangle2D(0.0, 2.0, colorPalette.width, colorPalette.height - 2.0)
                 ImageIO.write(
@@ -259,31 +246,26 @@ class MainController : IStage, INavigation, ISaveDialog, CoroutineScope {
     private fun setup(imageFragment: ImageFragment) {
         imageFragment.imageView.fitWidthProperty().bind(fragmentContainer.widthProperty())
         imageFragment.imageView.fitHeightProperty().bind(fragmentContainer.heightProperty())
-        slider.valueProperty().removeListener(sliderCountListener)
-        imageFragment.colors.addListener { _, _, colors -> setColorPalette(colors) }
         fragmentContainer.children.removeAt(0)
         fragmentContainer.children.add(0, imageFragment)
         fragment = imageFragment
     }
 
-    private fun setColorPalette(colors: Array<Color>) {
+    private fun setColorPalette(count: Int) {
         val currentCount = colorPalette.children.size
-        if (currentCount > colors.size) {
-            colorPalette.children.remove(colors.size, currentCount)
+        if (currentCount > count) {
+            colorPalette.children.remove(count, currentCount)
         } else {
-            while (colorPalette.children.size < colors.size) {
+            while (colorPalette.children.size < count) {
                 colorPalette.children.add(ColorTile())
             }
-        }
-        colors.forEachIndexed { index, color ->
-            (colorPalette.children[index] as ColorTile).setColor(color)
         }
     }
 
     private fun openFileDialog() {
         val fileChooser = FileChooser()
         fileChooser.title = "Select an image"
-        fileChooser.showOpenDialog(stage)?.let {
+        fileChooser.showOpenDialog(this)?.let {
             launch {
                 try {
                     fragment.onLoad(it.absolutePath)

@@ -1,6 +1,5 @@
 package components
 
-import IStage
 import javafx.beans.NamedArg
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.event.ActionEvent
@@ -9,8 +8,9 @@ import javafx.fxml.FXMLLoader
 import javafx.scene.control.Button
 import javafx.scene.layout.HBox
 import javafx.stage.Screen
+import javafx.stage.Stage
 
-class HeaderBar(@NamedArg("stage") private val stage: IStage) : HBox() {
+class HeaderBar(@NamedArg("stage") private val stage: Stage) : HBox() {
     @FXML
     private lateinit var maximizeButton: Button
 
@@ -29,35 +29,37 @@ class HeaderBar(@NamedArg("stage") private val stage: IStage) : HBox() {
     }
 
     fun onClose(event: ActionEvent) {
-        stage.stage.close()
+        stage.close()
         event.consume()
     }
 
     fun onMinimize(event: ActionEvent) {
-        stage.stage.isIconified = true
+        stage.isIconified = true
         event.consume()
     }
 
     fun onMaximize(event: ActionEvent) {
         isMaximized.value = !isMaximized.value
         if (isMaximized.value) {
+            stage.scene.root.styleClass.remove("stage-shadow")
             maximizeButton.text = "\uE923"
-            originalWidth = stage.stage.width
-            originalHeight = stage.stage.height
-            originalLeft = stage.stage.x
-            originalTop = stage.stage.y
+            originalWidth = stage.width
+            originalHeight = stage.height
+            originalLeft = stage.x
+            originalTop = stage.y
             Screen.getPrimary().visualBounds.apply {
-                stage.stage.width = width
-                stage.stage.height = height
-                stage.stage.x = minX
-                stage.stage.y = minY
+                stage.width = width
+                stage.height = height
+                stage.x = minX
+                stage.y = minY
             }
         } else {
+            stage.scene.root.styleClass.add("stage-shadow")
             maximizeButton.text = "\uE922"
-            stage.stage.x = originalLeft
-            stage.stage.y = originalTop
-            stage.stage.width = originalWidth
-            stage.stage.height = originalHeight
+            stage.x = originalLeft
+            stage.y = originalTop
+            stage.width = originalWidth
+            stage.height = originalHeight
         }
         event.consume()
     }

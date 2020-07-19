@@ -1,8 +1,7 @@
+import components.PalettiWindow
 import javafx.application.Application
-import javafx.fxml.FXMLLoader
 import javafx.scene.image.Image
 import javafx.stage.Stage
-import javafx.stage.StageStyle
 
 fun main(args: Array<String>) {
     Application.launch(Paletti::class.java, *args)
@@ -10,8 +9,8 @@ fun main(args: Array<String>) {
 
 class Paletti : Application() {
     override fun start(primaryStage: Stage) {
-        val stage = FXMLLoader.load<Stage>(javaClass.getResource("MainWindow.fxml"))
-        stage.initStyle(StageStyle.TRANSPARENT)
+        val viewModel = ImageViewModel()
+        val stage = PalettiWindow(viewModel)
         stage.icons += Image(javaClass.getResourceAsStream("icons/256.png"))
         stage.focusedProperty().addListener { _, _, hasFocus ->
             if (hasFocus) {

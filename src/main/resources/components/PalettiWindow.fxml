@@ -10,11 +10,10 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.Scene?>
 <?import javafx.stage.Stage?>
-<Stage fx:id="stage" minHeight="450.0" minWidth="500.0" title="Paletti" xmlns="http://javafx.com/javafx/10.0.2-internal"
-		 xmlns:fx="http://javafx.com/fxml/1" fx:controller="MainController">
+<fx:root type="Stage" minHeight="450.0" minWidth="500.0" title="Paletti" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
 	<scene>
 		<Scene fx:id="scene" fill="#00000000" onDragDropped="#onDragDropped" onDragOver="#onDragOver"
-				 onKeyPressed="#onKeyPressed" onScroll="#onScroll" stylesheets="@style.css">
+				 onKeyPressed="#onKeyPressed" onScroll="#onScroll" stylesheets="@../style.css">
 			<VBox styleClass="stage-shadow">
 				<HBox alignment="CENTER" onMouseDragged="#onHeaderBarDragged" onMousePressed="#onHeaderBarPressed"
 						VBox.vgrow="NEVER">
@@ -63,4 +62,4 @@
 			</VBox>
 		</Scene>
 	</scene>
-</Stage>
+</fx:root>
